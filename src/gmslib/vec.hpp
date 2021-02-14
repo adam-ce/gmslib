@@ -12,6 +12,7 @@
 #include "base.hpp"
 #include <sstream>
 #include <iostream>
+#include <limits>
 
 
 namespace gms
@@ -686,17 +687,10 @@ namespace gms
 
 	#pragma region general functions
 	//------------------------------------------------------------------------------------------------------------------------
-	#ifdef UNIX
-	inline bool isnan(float v) { return std::fpclassify(v) == FP_NAN; }
-	inline bool isinf(float v) { return std::fpclassify(v) == FP_INFINITE; }
-	inline bool isfinite(float v) { return (!isinf(v) && !isnan(v)); }
-	inline bool isnormal(float v) { return std::fpclassify(v) == FP_NORMAL; }
-	#else
 	inline bool isnan(float v) { return v != v; }
-	inline bool isinf(float v) { return fpclassify(v) == FP_INFINITE; }
-	inline bool isfinite(float v) { return fpclassify(v) <= 0; }
-	inline bool isnormal(float v) { return fpclassify(v) == FP_NORMAL; }
-	#endif
+    inline bool isinf(float v) { return std::fpclassify(v) == FP_INFINITE; }
+    inline bool isfinite(float v) { return std::fpclassify(v) <= 0; }
+    inline bool isnormal(float v) { return std::fpclassify(v) == FP_NORMAL; }
 
 	inline bool isnan(const vec2& v) { return v.x != v.x || v.y != v.y; }
 	inline bool isnan(const vec3& v) { return v.x != v.x || v.y != v.y || v.z != v.z; }
@@ -2362,7 +2356,7 @@ namespace gms
 			smat3 cn = (*this) / emax;
 			
 			vec3 evalues;				// pivoted eigen values
-			float eps = 2 * FLT_MIN;	// Note: if epsilon is zero, small numeric instabilities can pretty fast result in a false rank-estimation, which can result in bad eigenvectors
+            float eps = 2 * std::numeric_limits<float>::min();	// Note: if epsilon is zero, small numeric instabilities can pretty fast result in a false rank-estimation, which can result in bad eigenvectors
 			{
 				evalues = cn.eigenvalues();
 

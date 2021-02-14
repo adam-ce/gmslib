@@ -48,7 +48,7 @@ namespace gms
 
 	
 	// converts NAN values to 0, and leaves them unchanged otherwise
-	inline float nanto0(float x) { return isnan(x) ? 0 : x; }
+    inline float nanto0(float x) { return std::isnan(x) ? 0 : x; }
 	
 	// signum function returning the sign of val (-1 if negative, +1 if positive, 0 if zero).
 	template<typename T> int sgn(T val) {

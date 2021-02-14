@@ -145,8 +145,8 @@ namespace gms
 			mPoints = &points;
 
 			// compute bounding box (with epsilon space border)
-			mBBmin = vec3(FLT_MAX, FLT_MAX, FLT_MAX);
-			mBBmax = vec3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+            mBBmin = vec3(std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
+            mBBmax = vec3(std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest());
 
 			for (const vec3& pt : points)
 			{

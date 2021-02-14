@@ -16,6 +16,7 @@
 #ifndef NANOPLY_HPP
 #define NANOPLY_HPP
 
+#include <cstring>
 #include <vector>
 #include <unordered_map>
 #include <tuple>
@@ -505,7 +506,7 @@ namespace nanoply
     else if (bufferOffset + nByte > bufferSize)
     {
       const size_t lastByte = bufferSize - bufferOffset;
-      memcpy(buffer, &buffer[bufferOffset], lastByte);
+      std::memcpy(buffer, &buffer[bufferOffset], lastByte);
       fileStream.read(&buffer[lastByte], maxSize - lastByte);
       bufferSize = fileStream.gcount() + lastByte;
       bufferOffset = 0;
@@ -541,7 +542,7 @@ namespace nanoply
       fileStream.write(buffer, bufferOffset);
       bufferOffset = 0;
     }
-    memcpy(&buffer[bufferOffset], src, nByte);
+    std::memcpy(&buffer[bufferOffset], src, nByte);
     bufferOffset += nByte;
     return true;
   }
@@ -1136,10 +1137,10 @@ namespace nanoply
   {
     char* token;
     char* tempStr = &elemStr[0];
-    token = strtok(tempStr, " \t");
-    if (strstr(token, "element") == NULL)
+    token = std::strtok(tempStr, " \t");
+    if (std::strstr(token, "element") == NULL)
       return false;
-    token = strtok(0, " \t\n");
+    token = std::strtok(0, " \t\n");
     name = std::string(token);
     plyElem = PlyElemEntity::NNP_UNKNOWN_ELEM;
     ElementMapIterator iter = mapElem.begin();
@@ -1162,8 +1163,8 @@ namespace nanoply
       }
       iter++;
     }
-    token = strtok(0, " \t\n");
-    cnt = atoi(token);
+    token = std::strtok(0, " \t\n");
+    cnt = std::atoi(token);
     for (size_t i = 0; i < propStr.size(); i++)
       if (!AddProperty(propStr[i]))
         return false;
@@ -1281,17 +1282,17 @@ namespace nanoply
   {
     char* token;
     char* tempStr = &line[0];
-    token = strtok(tempStr, " \t");
-    if (strstr(token, "property") == NULL)
+    token = std::strtok(tempStr, " \t");
+    if (std::strstr(token, "property") == NULL)
       return false;
-    char* typeStr = strtok(0, " \t\n");
+    char* typeStr = std::strtok(0, " \t\n");
     char *ty1, *ty2;
     std::string type;
     type.append(typeStr);
-    if (strcmp(typeStr, "list") == 0)
+    if (std::strcmp(typeStr, "list") == 0)
     {
-      ty1 = strtok(0, " \t\n");
-      ty2 = strtok(0, " \t\n");
+      ty1 = std::strtok(0, " \t\n");
+      ty2 = std::strtok(0, " \t\n");
       type.append(" ");
       type.append(ty1);
       type.append(" ");

@@ -14,6 +14,7 @@
 #include <cassert>
 #include <iostream>
 #include <set>
+#include <limits>
 
 #include "gaussian.hpp"
 #include "pointindex.hpp"
@@ -321,7 +322,7 @@ namespace gms
 			// 1. iterate over components, prepare index point centers and compute the parent's individual and maximum query radius
 			vector<char> isParent(nGaussians, 0);
 			vector<vec3> centers(nGaussians);
-			vector<uint> packedParentPos(nGaussians, UINT_MAX);
+            vector<uint> packedParentPos(nGaussians, std::numeric_limits<uint>::max());
 			vector<uint> parentIndices;
 			vector<float> queryRadii;
 			float maxQueryRadius = 0;
@@ -404,7 +405,7 @@ namespace gms
 					float likelihood = hemLikelihood(parent, child);
 
 					const float maxL = 1e8f;
-					const float minL = FLT_MIN;
+                    const float minL = std::numeric_limits<float>::min();
 					float wL_si = parent.weight * clamp(likelihood, minL, maxL);
 					
 					// save likelihood contribution

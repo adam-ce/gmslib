@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include <cstring>
 #include <vector>
 #include <omp.h>
 
@@ -56,7 +57,7 @@ namespace gms
 #pragma omp barrier
 
 #pragma omp single
-					memcpy(&partial[0] + 1, &temp[0] + 1, sizeof(T) * (num_threads - 1));
+                    std::memcpy(&partial[0] + 1, &temp[0] + 1, sizeof(T) * (num_threads - 1));
 				}
 
 

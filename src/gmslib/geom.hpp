@@ -11,6 +11,7 @@
 
 #include "vec.hpp"
 #include <vector>
+#include <limits>
 
 
 namespace gms
@@ -22,8 +23,8 @@ namespace gms
 		vec3 pmax;
 
 		BBox() :
-			pmin(vec3(FLT_MAX, FLT_MAX, FLT_MAX)),
-			pmax(vec3(-FLT_MAX, -FLT_MAX, -FLT_MAX))
+            pmin(vec3(std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max())),
+            pmax(vec3(std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest()))
 		{}
 
 		BBox(const vec3& pMin, const vec3& pMax) :
@@ -36,9 +37,9 @@ namespace gms
 		}
 
 		void reset()		
-		{
-			pmin = vec3(FLT_MAX, FLT_MAX, FLT_MAX);
-			pmax = vec3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+        {
+            pmin = vec3(std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
+            pmax = vec3(std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest());
 		}
 
 		// extend bounding box to cover new point p
@@ -196,7 +197,7 @@ namespace gms
 			float r2 = radius * radius;
 
 			if (d2 > r2)
-				return vec2(FLT_MAX, -FLT_MAX);
+                return vec2(std::numeric_limits<float>::max(), std::numeric_limits<float>::lowest());
 
 			float s = sqrtf(r2 - d2);				// distance of q to sphere boundary along the line
 
