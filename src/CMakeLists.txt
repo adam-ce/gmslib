@@ -1,6 +1,16 @@
+#-----------------------------------------------------------------------------
+# gmslib - Gaussian Mixture Surface Library
+# Copyright (c) Adam Celarek 2021 <celarek at cg dot tuwien dot ac dot at>
+#
+# Usage is subject to the terms of the WFP (modified BSD-3-Clause) license.
+# See the accompanied LICENSE file or
+# https://github.com/rpreiner/gmslib/blob/main/LICENSE
+#-----------------------------------------------------------------------------
+
+
 cmake_minimum_required(VERSION 3.18)
 
-project(gm_pytorch_extensions LANGUAGES CXX)
+project(gmslib LANGUAGES CUDA CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -24,6 +34,7 @@ list(APPEND CMAKE_PREFIX_PATH "${MY_ANACONDA_PATH}/lib/python3.7/site-packages/t
 find_package(OpenMP REQUIRED)
 find_package(Torch REQUIRED)
 find_package(Catch2 REQUIRED)
+add_compile_definitions(GMSLIB_CMAKE_TEST_BUILD)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
@@ -57,3 +68,9 @@ set(COMPUTE_MIXTURE_SOURCES
 
 add_executable(computeMixture ${GMS_LIB_HEADERS} ${COMPUTE_MIXTURE_SOURCES})
 target_link_libraries(computeMixture PUBLIC OpenMP::OpenMP_CXX)
+
+set(PYTHON_BINDINGS_SOURCES
+    pytorch_bindings/gms_compute_mixture_binding.cpp
+)
+add_library(python_bindings ${PYTHON_BINDINGS_SOURCES} ${GMS_LIB_HEADERS})
+target_link_libraries(python_bindings PUBLIC OpenMP::OpenMP_CXX torch)
