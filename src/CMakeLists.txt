@@ -20,7 +20,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 #string(APPEND CMAKE_LINKER_FLAGS" -fno-omit-frame-pointer -fsanitize=address")
 
 #target_compile_options(kre -Wall -Wextra -Wpedantic -Werror)
-#string(APPEND CMAKE_CXX_FLAGS " -ffast-math -fno-finite-math-only")
+string(APPEND CMAKE_CXX_FLAGS " -ffast-math -fno-finite-math-only")
 string(APPEND CMAKE_CXX_FLAGS_RELEASE " -O4 -march=native")
 
 # this will enable the lld (llvm) linker. it's parallel and much faster, but not installed by default.

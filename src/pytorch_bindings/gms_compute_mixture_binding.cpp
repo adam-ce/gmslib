@@ -9,6 +9,7 @@
 
 #include <cassert>
 
+#include <omp.h>
 #include <torch/extension.h>
 
 #include "gmslib/pointset.hpp"
@@ -18,11 +19,15 @@ using namespace gms;
 
 
 // todo: find out how to forward a struct or similar from python side, or use a lengthy list of parameters and fill params.
+// todo: add a verbosity parameter to kill all stdout
 
 torch::Tensor compute_mixture(torch::Tensor point_cloud) {
 
     Mixture::Params params;
-
+    // be careful with omp_get_num_procs.
+    // starting 24 threads takes longer than processing 10k uniformly distributed points. best make it a parameter as well.
+    // might be different when using real data.
+//    params.numThreads = omp_get_num_procs();
     point_cloud = point_cloud.clone().contiguous().toType(torch::ScalarType::Float).cpu();
     TORCH_CHECK(point_cloud.sizes().size() == 2, "point cloud must have dimensions of N x 3")
     TORCH_CHECK(point_cloud.size(0) > 0, "point cloud must have dimensions of N x 3")
