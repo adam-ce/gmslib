@@ -1,6 +1,7 @@
 //-----------------------------------------------------------------------------
 // gmslib - Gaussian Mixture Surface Library
 // Copyright (c) Reinhold Preiner 2014-2020 
+//				 Simon Fraiss 2021
 // 
 // Usage is subject to the terms of the WFP (modified BSD-3-Clause) license.
 // See the accompanied LICENSE file or
@@ -64,10 +65,11 @@ namespace gms
 			uint	nLevels = 4;					// number of levels to use when clustering
 			float	hemReductionFactor = 3.0f;		// factor by which to reduce the mixture each level
 			float	alpha = 2.2f;					// multiple of cluster maximum std deviation to use for query radius
+			uint	fixedNumberOfGaussians = 0;		// If 0, the number of Gaussians is not determined in advance. Otherwise this will be the amount of Gaussians in the result. If activated, nLevels will be ignored
 			bool	computeNVar = true;
 			bool	blockProcessing = false;
 			uint	blockSize = 1000000;
-			uint	numThreads;
+			uint	numThreads = 8;
 			Params() {}
 		};
 				
@@ -210,7 +212,7 @@ namespace gms
 			Timer timer; 
 			timer.start();
 			// complete reduction until convergence
-			if (params.nLevels == 0)
+			if (params.nLevels == 0 && params.fixedNumberOfGaussians == 0)
 			{
 				uint lastSize = 0;
 				uint l = 1;
@@ -219,6 +221,19 @@ namespace gms
 					if (params.verbose)	cout << "level " << l;
 					++l;
 					lastSize = size();
+					reduceLevel(params);
+					if (params.verbose) cout << ":\tsize " << size() << endl;
+				}
+				cout << (l - 1) << " levels\n";
+			}
+			// reduction for fixed number of Gaussians
+			else if (params.fixedNumberOfGaussians != 0)
+			{
+				uint l = 1;
+				while (size() > params.fixedNumberOfGaussians)
+				{
+					if (params.verbose) cout << "level " << l;
+					++l;
 					reduceLevel(params);
 					if (params.verbose) cout << ":\tsize " << size() << endl;
 				}
@@ -328,18 +343,60 @@ namespace gms
 			float maxQueryRadius = 0;
 
 			//timer.start();
-			for (uint i = 0; i < nGaussians; ++i)
+
+			if (params.fixedNumberOfGaussians == 0)
 			{
-				Gaussian& g = at(i);
-
-				// prepare centers to be indexed
-				centers[i] = g.mu;
-
-				// select parents and save parent flag
-				if (isParent[i] = random::uniform01() < parentProbability ? 1 : 0)
+				for (uint i = 0; i < nGaussians; ++i)
 				{
-					packedParentPos[i] = parentIndices.size();
-					parentIndices.push_back(i);
+					Gaussian& g = at(i);
+
+					// prepare centers to be indexed
+					centers[i] = g.mu;
+
+					// select parents and save parent flag
+					if (isParent[i] = random::uniform01() < parentProbability ? 1 : 0)
+					{
+						packedParentPos[i] = parentIndices.size();
+						parentIndices.push_back(i);
+
+						// ii. get the conservative query radius for this parent
+						float queryRadius = params.alpha * sqrtf(g.cov.eigenvalues().z);
+						queryRadii.push_back(queryRadius);
+
+						// ii. determine maximum query radius
+						if (queryRadius > maxQueryRadius)
+							maxQueryRadius = queryRadius;
+					}
+				}
+			}
+			//Alternative sampling for fixed number of Gaussians
+			else
+			{
+				/*
+				In order to not accidentially sample too few Gaussians as parents,
+				we ensure that we take a deterministically fixed number of Gaussians as new parents,
+				which is at least the required number of Gaussians we want.
+				(Orphans might be added later, but then the process is just repeated on the next level
+				until we have the required number).
+				*/
+				std::vector<uint> shuffledIndizes;
+				uint nParents = std::max(uint(nGaussians * parentProbability), params.fixedNumberOfGaussians);
+				shuffledIndizes.resize(nGaussians);
+				parentIndices.resize(nParents);
+				for (int i = 0; i < nGaussians; ++i)
+				{
+					centers[i] = at(i).mu;
+					shuffledIndizes[i] = i;
+				}
+				std::random_device rd;
+				std::shuffle(shuffledIndizes.begin(), shuffledIndizes.end(), std::mt19937(rd()));
+				for (int siIndex = 0; siIndex < nParents; ++siIndex)
+				{
+					int shuffledindex = shuffledIndizes[siIndex]; //shuffledindex corresponds to i in the upper if
+					isParent[shuffledindex] = true;
+					packedParentPos[shuffledindex] = siIndex;
+					parentIndices[siIndex] = shuffledindex;
+					Gaussian& g = at(shuffledindex);
 
 					// ii. get the conservative query radius for this parent
 					float queryRadius = params.alpha * sqrtf(g.cov.eigenvalues().z);

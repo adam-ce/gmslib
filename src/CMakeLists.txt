@@ -1,6 +1,7 @@
 #-----------------------------------------------------------------------------
 # gmslib - Gaussian Mixture Surface Library
 # Copyright (c) Adam Celarek 2021 <celarek at cg dot tuwien dot ac dot at>
+#               Simon Fraiss 2021
 #
 # Usage is subject to the terms of the WFP (modified BSD-3-Clause) license.
 # See the accompanied LICENSE file or
@@ -33,8 +34,9 @@ list(APPEND CMAKE_PREFIX_PATH "${MY_ANACONDA_PATH}/lib/python3.7/site-packages/t
 
 find_package(OpenMP REQUIRED)
 find_package(Torch REQUIRED)
-find_package(Catch2 REQUIRED)
 add_compile_definitions(GMSLIB_CMAKE_TEST_BUILD)
+add_compile_definitions(_HAS_STD_BYTE=0)
+add_compile_definitions(NOMINMAX=1)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 

@@ -1,6 +1,7 @@
 //-----------------------------------------------------------------------------
 // gmslib - Gaussian Mixture Surface Library
 // Copyright (c) Adam Celarek 2021 <celarek at cg dot tuwien dot ac dot at>
+//               Simon Fraiss 2021
 // 
 // Usage is subject to the terms of the WFP (modified BSD-3-Clause) license.
 // See the accompanied LICENSE file or
@@ -21,9 +22,8 @@ using namespace gms;
 // todo: find out how to forward a struct or similar from python side, or use a lengthy list of parameters and fill params.
 // todo: add a verbosity parameter to kill all stdout
 
-torch::Tensor compute_mixture(torch::Tensor point_cloud) {
+torch::Tensor compute_mixture(torch::Tensor point_cloud, Mixture::Params params) {
 
-    Mixture::Params params;
     // be careful with omp_get_num_procs.
     // starting 24 threads takes longer than processing 10k uniformly distributed points. best make it a parameter as well.
     // might be different when using real data.
@@ -51,7 +51,7 @@ torch::Tensor compute_mixture(torch::Tensor point_cloud) {
     auto torch_mixture = torch::empty({int(cpp_mixture.size()), 13}, torch::ScalarType::Float);
     auto mixture_accessor = torch_mixture.accessor<float, 2>();
     for (unsigned i = 0; i < cpp_mixture.size(); ++i) {
-        mixture_accessor[i][0] = cpp_mixture[i].weight;
+        mixture_accessor[i][0] = cpp_mixture[i].weight / n;
 
         mixture_accessor[i][1] = cpp_mixture[i].mu.x;
         mixture_accessor[i][2] = cpp_mixture[i].mu.y;
@@ -76,6 +76,27 @@ torch::Tensor compute_mixture(torch::Tensor point_cloud) {
 
 #ifndef GMSLIB_CMAKE_TEST_BUILD
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
+
+    py::class_<Mixture::Params>(m, "Params")
+        .def(py::init<>())
+        .def_readwrite("verbose", &Mixture::Params::verbose)
+        .def_readwrite("memoryProfiling", &Mixture::Params::memoryProfiling)
+        .def_readwrite("initNeighborhoodType", &Mixture::Params::initNeighborhoodType)
+        .def_readwrite("kNNCount", &Mixture::Params::kNNCount)
+        .def_readwrite("maxInitNeighborDist", &Mixture::Params::maxInitNeighborDist)
+        .def_readwrite("initIsotropicStdev", &Mixture::Params::initIsotropicStdev)
+        .def_readwrite("initIsotropic", &Mixture::Params::initIsotropic)
+        .def_readwrite("useWeightedPotentials", &Mixture::Params::useWeightedPotentials)
+        .def_readwrite("initMeansInPoints", &Mixture::Params::initMeansInPoints)
+        .def_readwrite("nLevels", &Mixture::Params::nLevels)
+        .def_readwrite("hemReductionFactor", &Mixture::Params::hemReductionFactor)
+        .def_readwrite("alpha", &Mixture::Params::alpha)
+        .def_readwrite("fixedNumberOfGaussians", &Mixture::Params::fixedNumberOfGaussians)
+        .def_readwrite("computeNVar", &Mixture::Params::computeNVar)
+        .def_readwrite("blockProcessing", &Mixture::Params::blockProcessing)
+        .def_readwrite("blockSize", &Mixture::Params::blockSize)
+        .def_readwrite("numThreads", &Mixture::Params::numThreads);
+
     m.def("compute_mixture", &compute_mixture, "Compute mixture using HEM algorithm");
 }
 #endif
