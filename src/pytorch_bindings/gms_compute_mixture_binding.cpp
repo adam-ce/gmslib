@@ -18,11 +18,26 @@
 using namespace std;
 using namespace gms;
 
+struct ExecutionParams {
+    bool verbose = true;        //Verbose output
+    bool memory = false;        //Activate memory usage profiling
+    float alpha = 2.0;          //Clustering regularization parameter
+    unsigned int blocksize = 0; //Compute mixture in blocks of the specified point count
+    bool pointpos = true;       //Initializes Gaussian positions in point locations rather than local point means
+    float stdev = 0.01f;        //Default isotropic standard deviation bias of each initial Gaussian [in %bbd]
+    bool iso = false;           //Initialize mixture with isotropic Gaussians of standard deviation <stdev>
+    string inittype = "fixed";  //'knn' - Init anisotropic Gaussians based on KNN; 'fixed' - based on fixed distance
+    unsigned int knn = 8;       //Number of nearest neighbors considered for 'knn' initialization
+    float fixeddist = 0.1f;     //Max neighborhood distance for points considered for 'fixed' initialization [in %bbd]
+    bool weighted = false;      //Initializes mixture with locally normalized density
+    unsigned int levels = 20;   //Number of HEM clustering levels
+    unsigned int threads = 8;   //Number of parallel threads
+    //Quantities described with '[in %bbd]' are given in percent of the input point cloud bounding box diagonal.
+};
 
-// todo: find out how to forward a struct or similar from python side, or use a lengthy list of parameters and fill params.
 // todo: add a verbosity parameter to kill all stdout
 
-torch::Tensor compute_mixture(torch::Tensor point_cloud, Mixture::Params params) {
+torch::Tensor compute_mixture(torch::Tensor point_cloud, ExecutionParams execparams) {
 
     // be careful with omp_get_num_procs.
     // starting 24 threads takes longer than processing 10k uniformly distributed points. best make it a parameter as well.
@@ -39,6 +54,33 @@ torch::Tensor compute_mixture(torch::Tensor point_cloud, Mixture::Params params)
     auto point_cloud_accessor = point_cloud.accessor<float, 2>();
     for (unsigned i = 0; i < n; ++i) {
         cpp_point_cloud.emplace_back(point_cloud_accessor[i][0], point_cloud_accessor[i][1], point_cloud_accessor[i][2]);
+    }
+
+    Mixture::Params params;
+    params.computeNVar = false;		// deactivate CLOP normal clustering 
+    params.verbose = execparams.verbose;
+    params.memoryProfiling = execparams.memory;
+    params.alpha = execparams.alpha;
+    params.blockSize = execparams.blocksize;
+    params.blockProcessing = execparams.blocksize > 0;
+    params.hemReductionFactor = 3.0f;
+    params.initIsotropic = execparams.iso;
+    params.initIsotropicStdev = execparams.stdev;
+    params.initMeansInPoints = execparams.pointpos;
+    params.kNNCount = execparams.knn;
+    params.maxInitNeighborDist = execparams.fixeddist;
+    params.nLevels = execparams.levels;
+    params.numThreads = execparams.threads;
+    params.useWeightedPotentials = execparams.weighted;
+    params.initNeighborhoodType = 0;
+    if (execparams.inittype != "")
+    {
+        if (execparams.inittype == "fixed")		params.initNeighborhoodType = 0;
+        else if (execparams.inittype == "knn")	params.initNeighborhoodType = 1;
+        else {
+            std::cerr << "Invalid 'anisotype' argument. Use 'knn' or 'fixed'.\n";
+            exit(1);
+        }
     }
 
     BBox bboxPoints(cpp_point_cloud);
@@ -77,25 +119,21 @@ torch::Tensor compute_mixture(torch::Tensor point_cloud, Mixture::Params params)
 #ifndef GMSLIB_CMAKE_TEST_BUILD
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
 
-    py::class_<Mixture::Params>(m, "Params")
+    py::class_<ExecutionParams>(m, "ExecutionParams")
         .def(py::init<>())
-        .def_readwrite("verbose", &Mixture::Params::verbose)
-        .def_readwrite("memoryProfiling", &Mixture::Params::memoryProfiling)
-        .def_readwrite("initNeighborhoodType", &Mixture::Params::initNeighborhoodType)
-        .def_readwrite("kNNCount", &Mixture::Params::kNNCount)
-        .def_readwrite("maxInitNeighborDist", &Mixture::Params::maxInitNeighborDist)
-        .def_readwrite("initIsotropicStdev", &Mixture::Params::initIsotropicStdev)
-        .def_readwrite("initIsotropic", &Mixture::Params::initIsotropic)
-        .def_readwrite("useWeightedPotentials", &Mixture::Params::useWeightedPotentials)
-        .def_readwrite("initMeansInPoints", &Mixture::Params::initMeansInPoints)
-        .def_readwrite("nLevels", &Mixture::Params::nLevels)
-        .def_readwrite("hemReductionFactor", &Mixture::Params::hemReductionFactor)
-        .def_readwrite("alpha", &Mixture::Params::alpha)
-        .def_readwrite("fixedNumberOfGaussians", &Mixture::Params::fixedNumberOfGaussians)
-        .def_readwrite("computeNVar", &Mixture::Params::computeNVar)
-        .def_readwrite("blockProcessing", &Mixture::Params::blockProcessing)
-        .def_readwrite("blockSize", &Mixture::Params::blockSize)
-        .def_readwrite("numThreads", &Mixture::Params::numThreads);
+        .def_readwrite("verbose", &ExecutionParams::verbose)
+        .def_readwrite("memory", &ExecutionParams::memory)
+        .def_readwrite("alpha", &ExecutionParams::alpha)
+        .def_readwrite("blocksize", &ExecutionParams::blocksize)
+        .def_readwrite("pointpos", &ExecutionParams::pointpos)
+        .def_readwrite("stdev", &ExecutionParams::stdev)
+        .def_readwrite("iso", &ExecutionParams::iso)
+        .def_readwrite("inittype", &ExecutionParams::inittype)
+        .def_readwrite("knn", &ExecutionParams::knn)
+        .def_readwrite("fixeddist", &ExecutionParams::fixeddist)
+        .def_readwrite("weighted", &ExecutionParams::weighted)
+        .def_readwrite("levels", &ExecutionParams::levels)
+        .def_readwrite("threads", &ExecutionParams::threads);
 
     m.def("compute_mixture", &compute_mixture, "Compute mixture using HEM algorithm");
 }

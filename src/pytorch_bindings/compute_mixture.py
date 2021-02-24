@@ -20,43 +20,35 @@ bindings = torch.utils.cpp_extension.load('compute_mixture',
 
 class Params:
     def __init__(self):
-        self.verbose = False
-        self.memoryProfiling = False
-        self.initNeighborhoodType = 1
-        self.kNNCount = 8
-        self.maxInitNeighborDist = 1.0
-        self.initIsotropicStdev = 1.0
-        self.initIsotropic = False
-        self.useWeightedPotentials = True
-        self.initMeansInPoints = True
-        self.nLevels = 4
-        self.hemReductionFactor = 3.0
-        self.alpha = 2.2
-        self.fixedNumberOfGaussians = 0
-        self.computeNVar = True
-        self.blockProcessing = False
-        self.blockSize = 1000000
-        self.numThreads = 8
+        self.verbose = True
+        self.memory = False
+        self.alpha = 2.0
+        self.blocksize = 0
+        self.pointpos = True
+        self.stdev = 0.01
+        self.iso = False
+        self.inittype = "fixed"
+        self.knn = 8
+        self.fixeddist = 0.1
+        self.weighted = False
+        self.levels = 20
+        self.threads = 8
 
 
 def compute_mixture(point_cloud: torch.Tensor, params: Params) -> torch.Tensor:
-    par = bindings.Params()
+    par = bindings.ExecutionParams()
     par.verbose = params.verbose
-    par.memoryProfiling = params.memoryProfiling
-    par.initNeighborhoodType = params.initNeighborhoodType
-    par.kNNCount = params.kNNCount
-    par.maxInitNeighborDist = params.maxInitNeighborDist
-    par.initIsotropicStdev = params.initIsotropicStdev
-    par.initIsotropic = params.initIsotropic
-    par.useWeightedPotentials = params.useWeightedPotentials
-    par.initMeansInPoints = params.initMeansInPoints
-    par.nLevels = params.nLevels
-    par.hemReductionFactor = params.hemReductionFactor
+    par.memory = params.memory
     par.alpha = params.alpha
-    par.fixedNumberOfGaussians = params.fixedNumberOfGaussians
-    par.computeNVar = params.computeNVar
-    par.blockProcessing = params.blockProcessing
-    par.blockSize = params.blockSize
-    par.numThreads = params.numThreads
+    par.blocksize = params.blocksize
+    par.pointpos = params.pointpos
+    par.stdev = params.stdev
+    par.iso = params.iso
+    par.inittype = params.inittype
+    par.knn = params.knn
+    par.fixeddist = params.fixeddist
+    par.weighted = params.weighted
+    par.levels = params.levels
+    par.threads = params.threads
     return bindings.compute_mixture(point_cloud, par)
 
