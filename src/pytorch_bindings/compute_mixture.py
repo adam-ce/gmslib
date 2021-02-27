@@ -33,6 +33,8 @@ class Params:
         self.weighted = False
         self.levels = 20
         self.threads = 8
+        self.ngaussians = 0
+        self.reductionFactor = 3.0
 
 
 def compute_mixture(point_cloud: torch.Tensor, params: Params) -> torch.Tensor:
@@ -50,5 +52,7 @@ def compute_mixture(point_cloud: torch.Tensor, params: Params) -> torch.Tensor:
     par.weighted = params.weighted
     par.levels = params.levels
     par.threads = params.threads
+    par.ngaussians = params.ngaussians
+    par.reductionFactor = params.reductionFactor
     return bindings.compute_mixture(point_cloud, par)
 

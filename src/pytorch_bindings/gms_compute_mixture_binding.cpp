@@ -32,6 +32,8 @@ struct ExecutionParams {
     bool weighted = false;      //Initializes mixture with locally normalized density
     unsigned int levels = 20;   //Number of HEM clustering levels
     unsigned int threads = 8;   //Number of parallel threads
+    unsigned int ngaussians = 0;//Fixed Number of output Gaussians if desired, otherwise zero. If not zero, levels will be ignored, and chosen automatically.
+    float reductionFactor = 3;  //Reduction Factor
     //Quantities described with '[in %bbd]' are given in percent of the input point cloud bounding box diagonal.
 };
 
@@ -63,7 +65,7 @@ torch::Tensor compute_mixture(torch::Tensor point_cloud, ExecutionParams execpar
     params.alpha = execparams.alpha;
     params.blockSize = execparams.blocksize;
     params.blockProcessing = execparams.blocksize > 0;
-    params.hemReductionFactor = 3.0f;
+    params.hemReductionFactor = execparams.reductionFactor;
     params.initIsotropic = execparams.iso;
     params.initIsotropicStdev = execparams.stdev;
     params.initMeansInPoints = execparams.pointpos;
@@ -73,6 +75,7 @@ torch::Tensor compute_mixture(torch::Tensor point_cloud, ExecutionParams execpar
     params.numThreads = execparams.threads;
     params.useWeightedPotentials = execparams.weighted;
     params.initNeighborhoodType = 0;
+    params.fixedNumberOfGaussians = execparams.ngaussians;
     if (execparams.inittype != "")
     {
         if (execparams.inittype == "fixed")		params.initNeighborhoodType = 0;
@@ -133,7 +136,9 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
         .def_readwrite("fixeddist", &ExecutionParams::fixeddist)
         .def_readwrite("weighted", &ExecutionParams::weighted)
         .def_readwrite("levels", &ExecutionParams::levels)
-        .def_readwrite("threads", &ExecutionParams::threads);
+        .def_readwrite("reductionFactor", &ExecutionParams::reductionFactor)
+        .def_readwrite("threads", &ExecutionParams::threads)
+        .def_readwrite("ngaussians", &ExecutionParams::ngaussians);
 
     m.def("compute_mixture", &compute_mixture, "Compute mixture using HEM algorithm");
 }

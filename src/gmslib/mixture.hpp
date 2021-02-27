@@ -230,12 +230,19 @@ namespace gms
 			else if (params.fixedNumberOfGaussians != 0)
 			{
 				uint l = 1;
+				uint prevsize = size();
 				while (size() > params.fixedNumberOfGaussians)
 				{
 					if (params.verbose) cout << "level " << l;
 					++l;
 					reduceLevel(params);
 					if (params.verbose) cout << ":\tsize " << size() << endl;
+					if (size() == prevsize)
+					{
+						cout << "Could not reduce to desired gauss count" << endl;
+						break;
+					}
+					prevsize = size();
 				}
 				cout << (l - 1) << " levels\n";
 			}
