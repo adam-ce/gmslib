@@ -33,7 +33,8 @@ struct ExecutionParams {
     unsigned int levels = 20;   //Number of HEM clustering levels
     unsigned int threads = 8;   //Number of parallel threads
     unsigned int ngaussians = 0;//Fixed Number of output Gaussians if desired, otherwise zero. If not zero, levels will be ignored, and chosen automatically.
-    float reductionFactor = 3;  //Reduction Factor
+    bool avoidorphans = false;  //Assigns each Child Gaussian to at least one parent
+    float reductionfactor = 3;  //Reduction Factor
     //Quantities described with '[in %bbd]' are given in percent of the input point cloud bounding box diagonal.
 };
 
@@ -65,7 +66,7 @@ torch::Tensor compute_mixture(torch::Tensor point_cloud, ExecutionParams execpar
     params.alpha = execparams.alpha;
     params.blockSize = execparams.blocksize;
     params.blockProcessing = execparams.blocksize > 0;
-    params.hemReductionFactor = execparams.reductionFactor;
+    params.hemReductionFactor = execparams.reductionfactor;
     params.initIsotropic = execparams.iso;
     params.initIsotropicStdev = execparams.stdev;
     params.initMeansInPoints = execparams.pointpos;
@@ -76,6 +77,7 @@ torch::Tensor compute_mixture(torch::Tensor point_cloud, ExecutionParams execpar
     params.useWeightedPotentials = execparams.weighted;
     params.initNeighborhoodType = 0;
     params.fixedNumberOfGaussians = execparams.ngaussians;
+    params.avoidOrphans = execparams.avoidorphans;
     if (execparams.inittype != "")
     {
         if (execparams.inittype == "fixed")		params.initNeighborhoodType = 0;
@@ -136,9 +138,10 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
         .def_readwrite("fixeddist", &ExecutionParams::fixeddist)
         .def_readwrite("weighted", &ExecutionParams::weighted)
         .def_readwrite("levels", &ExecutionParams::levels)
-        .def_readwrite("reductionFactor", &ExecutionParams::reductionFactor)
+        .def_readwrite("reductionfactor", &ExecutionParams::reductionfactor)
         .def_readwrite("threads", &ExecutionParams::threads)
-        .def_readwrite("ngaussians", &ExecutionParams::ngaussians);
+        .def_readwrite("ngaussians", &ExecutionParams::ngaussians)
+        .def_readwrite("avoidorphans", &ExecutionParams::avoidorphans);
 
     m.def("compute_mixture", &compute_mixture, "Compute mixture using HEM algorithm");
 }

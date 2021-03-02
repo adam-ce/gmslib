@@ -11,6 +11,7 @@
 #pragma once
 
 #include <vector>
+#include <set>
 #include <algorithm>
 #include <cassert>
 #include <iostream>
@@ -66,6 +67,7 @@ namespace gms
 			float	hemReductionFactor = 3.0f;		// factor by which to reduce the mixture each level
 			float	alpha = 2.2f;					// multiple of cluster maximum std deviation to use for query radius
 			uint	fixedNumberOfGaussians = 0;		// If 0, the number of Gaussians is not determined in advance. Otherwise this will be the amount of Gaussians in the result. If activated, nLevels will be ignored
+			bool	avoidOrphans = false;			// Assigns each Child Gaussian to at least one parent
 			bool	computeNVar = true;
 			bool	blockProcessing = false;
 			uint	blockSize = 1000000;
@@ -437,6 +439,46 @@ namespace gms
 			for (int i = 0; i < (int)cellCoords.size(); i++)
 				index->processCell(cellCoords[i], proc);
 
+			if (params.avoidOrphans) {
+				set<uint> remainingchildindices;
+				for (uint i = 0; i < size(); ++i) {
+					remainingchildindices.insert(i);
+				}
+				for (int i = 0; i < childIndices.size(); ++i) {
+					for (int j = 0; j < childIndices[i].size(); ++j) {
+						auto it = remainingchildindices.find(childIndices[i][j]);
+						if (it != remainingchildindices.end()) {
+							remainingchildindices.erase(it);
+						}
+					}
+				}
+				//cout << " (" << remainingchildindices.size() << " ex-orphans) ";
+				for (auto childindex = remainingchildindices.begin(); childindex != remainingchildindices.end(); ++childindex) {
+					float minkld = std::numeric_limits<float>::max();
+					uint bestparent = -1;
+					for (int j = 0; j < parentIndices.size(); ++j) {
+						const Gaussian& parent = at(parentIndices[j]);
+						const Gaussian& child = at(*childindex);
+						const float sqRadius = queryRadii[j] * queryRadii[j];
+						if (sqdist(parent.mu, child.mu) < sqRadius)
+						{
+
+							// consider not taking this child i into account only if its not the parent s itself!
+							if (parentIndices[j] != *childindex)
+							{
+								float kld = KLD(child, parent);
+								if (kld < minkld) {
+									minkld = kld;
+									bestparent = j;
+								}
+							}
+						}
+					}
+					if (bestparent != uint(-1)) {
+						childIndices[bestparent].push_back(*childindex);
+					}
+				}
+			}
 
 			//cout << "select child set: " << timer.stop() << " ms" << endl;
 			Memory::instance()->record(__LINE__);
