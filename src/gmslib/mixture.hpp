@@ -153,7 +153,9 @@ namespace gms
 			omp_set_num_threads(params.numThreads);
 			#pragma omp parallel
 			#pragma omp master
-			{ cout << "using " << omp_get_num_threads() << " threads" << endl; }
+			if (verbose) {
+                cout << "using " << omp_get_num_threads() << " threads" << endl;
+            }
 
 			if (params.memoryProfiling)
 				Memory::instance()->setActive(true);
@@ -246,7 +248,7 @@ namespace gms
 					}
 					prevsize = size();
 				}
-				cout << (l - 1) << " levels\n";
+				if (params.verbose) cout << (l - 1) << " levels\n";
 			}
 			// reduction by n levels
 			else
@@ -258,7 +260,7 @@ namespace gms
 					if (params.verbose)	cout << ":\tsize " << size() << endl;
 				}
 			}
-			cout << "  Reduced in " << timer.stop() << " ms" << endl;
+			if (params.verbose) cout << "  Reduced in " << timer.stop() << " ms" << endl;
 		}
 
 
@@ -681,11 +683,11 @@ namespace gms
 			nvars.clear();
 
 			// 1. initialize mixture M
-			cout << "initializing ";
+			if (params.verbose) cout << "initializing ";
 			Timer timer;
 			timer.start();
 			initMixture(*points, params);
-			cout << " ... " << timer.stop() << " ms" << endl;
+			if (params.verbose) cout << " ... " << timer.stop() << " ms" << endl;
 
 			Memory::instance()->record(__LINE__);
 
