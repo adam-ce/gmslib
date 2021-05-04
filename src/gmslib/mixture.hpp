@@ -455,29 +455,27 @@ namespace gms
 					}
 				}
 				//cout << " (" << remainingchildindices.size() << " ex-orphans) ";
-				for (auto childindex = remainingchildindices.begin(); childindex != remainingchildindices.end(); ++childindex) {
+				for (auto it = remainingchildindices.begin(); it != remainingchildindices.end(); ++it) {
+					uint childindex = *it;
 					float minkld = std::numeric_limits<float>::max();
-					uint bestparent = -1;
+					int bestparent = -1;
+					std::vector<float> klds(parentIndices.size(), minkld);
+					#pragma omp parallel for
 					for (int j = 0; j < parentIndices.size(); ++j) {
 						const Gaussian& parent = at(parentIndices[j]);
-						const Gaussian& child = at(*childindex);
-						const float sqRadius = queryRadii[j] * queryRadii[j];
-						if (sqdist(parent.mu, child.mu) < sqRadius)
-						{
-
-							// consider not taking this child i into account only if its not the parent s itself!
-							if (parentIndices[j] != *childindex)
-							{
-								float kld = KLD(child, parent);
-								if (kld < minkld) {
-									minkld = kld;
-									bestparent = j;
-								}
-							}
+						const Gaussian& child = at(childindex);
+						klds[j] = (parentIndices[j] != childindex) ? KLD(child, parent) : minkld;
+						//klds[j] = (parentIndices[j] != childindex && sqdist(parent.mu, child.mu) < queryRadii[j] * queryRadii[j]) ? KLD(child, parent) : minkld;
+					}
+					for (int j = 0; j < parentIndices.size(); ++j) {
+						float kld = klds[j];
+						if (kld < minkld) {
+							minkld = kld;
+							bestparent = j;
 						}
 					}
 					if (bestparent != uint(-1)) {
-						childIndices[bestparent].push_back(*childindex);
+						childIndices[bestparent].push_back(childindex);
 					}
 				}
 			}
@@ -628,6 +626,7 @@ namespace gms
 			}
 
 			uint packedSize = parallel::pack(indices, isOrphan, packedIndices);
+			//std::cout << "(Orphans: " << packedSize << ")" << std::endl;
 			uint oldSize = newMixture.size();
 			newMixture.resize(oldSize + packedSize);
 			if (hasNormals())	newMixture.nvars.resize(oldSize + packedSize);
