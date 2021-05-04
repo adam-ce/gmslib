@@ -153,7 +153,7 @@ namespace gms
 			omp_set_num_threads(params.numThreads);
 			#pragma omp parallel
 			#pragma omp master
-			if (verbose) {
+			if (params.verbose) {
                 cout << "using " << omp_get_num_threads() << " threads" << endl;
             }
 
