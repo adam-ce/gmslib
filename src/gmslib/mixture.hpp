@@ -67,7 +67,7 @@ namespace gms
 			float	hemReductionFactor = 3.0f;		// factor by which to reduce the mixture each level
 			float	alpha = 2.2f;					// multiple of cluster maximum std deviation to use for query radius
 			uint	fixedNumberOfGaussians = 0;		// If 0, the number of Gaussians is not determined in advance. Otherwise this will be the amount of Gaussians in the result. If activated, nLevels will be ignored
-			bool	avoidOrphans = false;			// Assigns each Child Gaussian to at least one parent
+			uint	avoidOrphansMode = 0;			// 0: Normal / 1: Assigns each Child Gaussian to at least one parent / 2: Normal until convergence to fixedNumber fails, then set to 1
 			bool	computeNVar = true;
 			bool	blockProcessing = false;
 			uint	blockSize = 1000000;
@@ -210,8 +210,9 @@ namespace gms
 
 
 		// reduces the mixture by nLevels levels. If nLevels is zero, the mixture is reduced until no further reduction is possible.
-		void reduce(const Params& params)
+		void reduce(const Params& params_o)
 		{
+			Params params = params_o;
 			//cout << "Reducing mixture with size " << size() << endl;
 			Timer timer; 
 			timer.start();
@@ -243,8 +244,15 @@ namespace gms
 					if (params.verbose) cout << ":\tsize " << size() << endl;
 					if (size() == prevsize)
 					{
-						cout << "Could not reduce to desired gauss count" << endl;
-						break;
+						if (params.avoidOrphansMode == 2)
+						{
+							params.avoidOrphansMode = 1;
+						}
+						else
+						{
+							cout << "Could not reduce to desired gauss count" << endl;
+							break;
+						}
 					}
 					prevsize = size();
 				}
@@ -441,7 +449,7 @@ namespace gms
 			for (int i = 0; i < (int)cellCoords.size(); i++)
 				index->processCell(cellCoords[i], proc);
 
-			if (params.avoidOrphans) {
+			if (params.avoidOrphansMode == 1) {
 				set<uint> remainingchildindices;
 				for (uint i = 0; i < size(); ++i) {
 					remainingchildindices.insert(i);

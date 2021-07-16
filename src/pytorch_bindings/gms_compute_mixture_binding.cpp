@@ -33,7 +33,7 @@ struct ExecutionParams {
     unsigned int levels = 20;   //Number of HEM clustering levels
     unsigned int threads = 8;   //Number of parallel threads
     unsigned int ngaussians = 0;//Fixed Number of output Gaussians if desired, otherwise zero. If not zero, levels will be ignored, and chosen automatically.
-    bool avoidorphans = false;  //Assigns each Child Gaussian to at least one parent
+    unsigned int avoidorphans = 0;// 0: Normal / 1: Assigns each Child Gaussian to at least one parent / 2: Normal until convergence to fixedNumber fails, then set to 1
     float reductionfactor = 3;  //Reduction Factor
     //Quantities described with '[in %bbd]' are given in percent of the input point cloud bounding box diagonal.
 };
@@ -77,7 +77,7 @@ torch::Tensor compute_mixture(torch::Tensor point_cloud, ExecutionParams execpar
     params.useWeightedPotentials = execparams.weighted;
     params.initNeighborhoodType = 0;
     params.fixedNumberOfGaussians = execparams.ngaussians;
-    params.avoidOrphans = execparams.avoidorphans;
+    params.avoidOrphansMode = execparams.avoidorphans;
     if (execparams.inittype != "")
     {
         if (execparams.inittype == "fixed")		params.initNeighborhoodType = 0;
